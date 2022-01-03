@@ -63,7 +63,6 @@ namespace AAEmu.Game.Models.Game.Char
             Quests.Add(quest.TemplateId, quest);
             quest.ClearObjectives();
 
-            quest.GetFirstComponent();
             var res = quest.Start();
             if (res == 0)
                 Quests.Remove(quest.TemplateId);
@@ -71,7 +70,6 @@ namespace AAEmu.Game.Models.Game.Char
             {
                 Owner.SendPacket(new SCQuestContextStartedPacket(quest, res));
             }
-            quest.GetNextComponent();
         }
 
         public void Complete(uint questContextId, int selected, bool supply = true)
@@ -143,7 +141,6 @@ namespace AAEmu.Game.Models.Game.Char
                 complete.Body.CopyTo(body, 0);
                 Drop(questContextId, false);
                 Owner.SendPacket(new SCQuestContextCompletedPacket(quest.TemplateId, body, res));
-                quest.GetNextComponent();
                 OnQuestComplete(questContextId);
             }
         }
