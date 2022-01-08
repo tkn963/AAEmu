@@ -3,7 +3,7 @@ using AAEmu.Game.Models.Game.Char;
 
 namespace AAEmu.Game.Models.Game.Quests.Acts
 {
-    public class QuestActObjMonsterHunt : QuestActTemplate
+    public class QuestActObjMonsterHunt : QuestActTemplate, IQuestActScoreProvider
     {
         public uint NpcId { get; set; }
         public int Count { get; set; }
@@ -17,7 +17,13 @@ namespace AAEmu.Game.Models.Game.Quests.Acts
             _log.Debug("QuestActObjMonsterHunt: NpcId {0}, Count {1}, UseAlias {2}, QuestActObjAliasId {3}, HighlightDoodadId {4}, HighlightDoodadPhase {5}, quest {6}, objective {7}",
                 NpcId, Count, UseAlias, QuestActObjAliasId, HighlightDoodadId, HighlightDoodadPhase, quest.TemplateId, objective);
 
+            _log.Debug(objective + "   |THIS|   " + Count);
+
             return objective >= Count;
+        }
+        public int GetScoreForObjective(int objective)
+        {
+            return objective * Count;
         }
     }
 }

@@ -61,11 +61,10 @@ namespace AAEmu.Game.Models.Game.Char
             quest.Step = QuestComponentKind.Start;
             quest.Owner = Owner;
             Quests.Add(quest.TemplateId, quest);
-            quest.ClearObjectives();
 
             var res = quest.Start();
             if (res == 0)
-                Quests.Remove(quest.TemplateId);
+                Quests.Remove(quest.TemplateId); // удаляем квест, если было взаимодействие с не предназначенным для квеста Npc
             else
             {
                 Owner.SendPacket(new SCQuestContextStartedPacket(quest, res));
@@ -81,6 +80,7 @@ namespace AAEmu.Game.Models.Game.Char
             }
 
             var quest = Quests[questContextId];
+            quest.Step = QuestComponentKind.Reward; // покажем, что заканчиваем квест
             var res = quest.Complete(selected);
             if (res != 0)
             {
@@ -143,6 +143,10 @@ namespace AAEmu.Game.Models.Game.Char
                 Owner.SendPacket(new SCQuestContextCompletedPacket(quest.TemplateId, body, res));
                 OnQuestComplete(questContextId);
             }
+            //else
+            //{
+            //    Drop(questContextId, true);
+            //}
         }
 
         public void Drop(uint questContextId, bool update)
@@ -206,6 +210,24 @@ namespace AAEmu.Game.Models.Game.Char
         {
             foreach (var quest in Quests.Values)
                 quest.OnQuestComplete(questContextId);
+        }
+        public void OnTalkMade(uint npcObjId, uint questContextId, uint questComponentId, uint questActId)
+        {
+            var npc = WorldManager.Instance.GetNpc(npcObjId);
+            if (npc == null)
+                return;
+
+            if (npc.GetDistanceTo(Owner) > 8.0f)
+                return;
+
+            if (!Quests.ContainsKey(questContextId))
+                return;
+            var quest = Quests[questContextId];
+
+            quest.TriggerAct<QuestActObjTalk>(
+                (talk, _) => questActId > 0 && talk.NpcId == npc.TemplateId,
+                (_, _) => 1
+                );
         }
 
         public void AddCompletedQuest(CompletedQuest quest)

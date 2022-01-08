@@ -3,7 +3,7 @@ using AAEmu.Game.Models.Game.Char;
 
 namespace AAEmu.Game.Models.Game.Quests.Acts
 {
-    public class QuestActObjMonsterGroupHunt : QuestActTemplate
+    public class QuestActObjMonsterGroupHunt : QuestActTemplate, IQuestActScoreProvider
     {
         public uint QuestMonsterGroupId { get; set; }
         public int Count { get; set; }
@@ -12,18 +12,19 @@ namespace AAEmu.Game.Models.Game.Quests.Acts
         public uint HighlightDoodadId { get; set; }
         public int HighlightDoodadPhase { get; set; }
 
-        public static int GatherStatus = 0;
         public override bool Use(Character character, Quest quest, int objective)
         {
             _log.Debug("QuestActObjMonsterGroupHunt: QuestMonsterGroupId {0}, Count {1}, UseAlias {2}, QuestActObjAliasId {3}, HighlightDoodadId {4}, HighlightDoodadPhase {5}, quest {6}, objective {7}, Score {8}",
                 QuestMonsterGroupId, Count, UseAlias, QuestActObjAliasId, HighlightDoodadId, HighlightDoodadPhase, quest.TemplateId, objective, quest.Template.Score);
 
-            if (quest.Template.Score > 0) // Check if the quest use Template.Score or Count 
-            {
-                QuestActObjItemGather.HuntStatus = objective;
-                return objective + GatherStatus >= quest.Template.Score / Count;
-            }
+            _log.Debug(objective + "   |THIS|   " + Count);
+
             return objective >= Count;
+        }
+
+        public int GetScoreForObjective(int objective)
+        {
+            return objective * Count;
         }
     }
 }
