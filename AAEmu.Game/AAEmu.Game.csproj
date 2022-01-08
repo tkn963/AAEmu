@@ -64,6 +64,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <None Update="Scripts\Commands\QuestCmd.cs">
+        <LinkBase>$([MSBuild]::EnsureTrailingSlash(%(LinkBase)))</LinkBase>
+      </None>
       <None Update="Scripts\Commands\SaveSpawn.cs">
         <LinkBase>$([MSBuild]::EnsureTrailingSlash(%(LinkBase)))</LinkBase>
       </None>

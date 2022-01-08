@@ -213,21 +213,19 @@ namespace AAEmu.Game.Models.Game.Char
         }
         public void OnTalkMade(uint npcObjId, uint questContextId, uint questComponentId, uint questActId)
         {
-            var npc = WorldManager.Instance.GetNpc(npcObjId);
-            if (npc == null)
-                return;
+        }
 
-            if (npc.GetDistanceTo(Owner) > 8.0f)
-                return;
+        public bool SetStep(uint questContextId, uint step)
+        {
+            if (step > 8)
+                return false;
 
             if (!Quests.ContainsKey(questContextId))
-                return;
-            var quest = Quests[questContextId];
+                return false;
 
-            quest.TriggerAct<QuestActObjTalk>(
-                (talk, _) => questActId > 0 && talk.NpcId == npc.TemplateId,
-                (_, _) => 1
-                );
+            var quest = Quests[questContextId];
+            quest.Step = (QuestComponentKind)step;
+            return true;
         }
 
         public void AddCompletedQuest(CompletedQuest quest)

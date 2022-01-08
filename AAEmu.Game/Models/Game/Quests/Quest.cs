@@ -33,6 +33,7 @@ namespace AAEmu.Game.Models.Game.Quests
         public int SupplyItem { get; set; }
         public bool EarlyCompletion { get; set; }
         public long DoodadId { get; set; }
+        public ulong ObjId { get; set; }
         public uint ComponentId { get; set; }
         public QuestAcceptorType QuestAcceptorType { get; set; }
         public uint AcceptorType { get; set; }
@@ -47,6 +48,7 @@ namespace AAEmu.Game.Models.Game.Quests
             Objectives = new int[ObjectiveCount];
             SupplyItem = 0;
             EarlyCompletion = false;
+            ObjId = 0;
         }
 
         public Quest(QuestTemplate template)
@@ -56,12 +58,14 @@ namespace AAEmu.Game.Models.Game.Quests
             Objectives = new int[ObjectiveCount];
             SupplyItem = 0;
             EarlyCompletion = false;
+            ObjId = 0;
         }
 
         public uint Start()
         {
             var res = false;
             //ComponentId = 0u;
+
             for (Step = QuestComponentKind.None; Step <= QuestComponentKind.Ready; Step++) // далее шага Ready = 6 не идем
             {
                 if (Step >= QuestComponentKind.Ready)
@@ -153,7 +157,7 @@ namespace AAEmu.Game.Models.Game.Quests
             return res ? ComponentId : 0;
         }
 
-        private void Update(bool send = true)
+        public void Update(bool send = true)
         {
             if (!send) { return; }
 
@@ -694,6 +698,7 @@ namespace AAEmu.Game.Models.Game.Quests
                                     var interactionTarget = (Doodad)target;
                                     if (template.DoodadId == interactionTarget.TemplateId)
                                     {
+                                        ObjId = interactionTarget.ObjId;
                                         res = true;
                                         Objectives[componentIndex]++;
                                         if (Objectives[componentIndex] >= template.Count) // TODO check to overtime
@@ -711,6 +716,11 @@ namespace AAEmu.Game.Models.Game.Quests
                                 Objectives[componentIndex] = Owner.Inventory.GetItemsCount(template.ItemId);
                                 res = false;
                                 Status = QuestStatus.Progress;
+                                if (target != null)
+                                {
+                                    var interactionTarget = (Doodad)target;
+                                    ObjId = interactionTarget.ObjId;
+                                }
                                 if (Template.Score > 0)
                                 {
                                     if (Objectives[componentIndex] >= (Template.Score / template.Count)) // TODO check to overtime
@@ -735,6 +745,11 @@ namespace AAEmu.Game.Models.Game.Quests
                                 Objectives[componentIndex] = Owner.Inventory.GetItemsCount(template.ItemId);
                                 res = false;
                                 Status = QuestStatus.Progress;
+                                if (target != null)
+                                {
+                                    var interactionTarget = (Doodad)target;
+                                    ObjId = interactionTarget.ObjId;
+                                }
                                 if (Template.Score > 0)
                                 {
                                     if (Objectives[componentIndex] >= (Template.Score / template.Count)) // TODO check to overtime
@@ -906,35 +921,6 @@ namespace AAEmu.Game.Models.Game.Quests
             return score;
         }
 
-        /**
-        * This is used to write objectives, and then check if the quest is up to date.
-        * Writer is a function to help us write into the Objective
-        * Checker is a function to skip potentially similar acts that do not match the condition
-        */
-        public void TriggerAct<T>(Func<T, int, bool> checker, Func<T, int, int> writer) where T : QuestActTemplate
-        {
-            var components = Template.GetComponents(Step);
-            if (components.Count == 0)
-                return;
-
-            for (var componentIndex = 0; componentIndex < components.Count; componentIndex++)
-            {
-                var component = components[componentIndex];
-                var acts = QuestManager.Instance.GetActs(component.Id)?.Where(a => a.DetailType == typeof(T).Name).ToList();
-                if (acts == null)
-                    return;
-                for (var i = 0; i < acts.Count; i++)
-                {
-                    var template = acts[i].GetTemplate<T>();
-                    if (!checker.Invoke(template, i))
-                        continue;
-
-                    Objectives[componentIndex] = writer.Invoke(template, Objectives[componentIndex]);
-                }
-            }
-            Update();
-        }
-
         public override PacketStream Write(PacketStream stream)
         {
             stream.Write(Id);
@@ -946,10 +932,10 @@ namespace AAEmu.Game.Models.Game.Quests
             }
 
             stream.Write(false);             // isCheckSet
-            stream.WriteBc(0);               // ObjId
+            stream.WriteBc((uint)ObjId);     // ObjId
             stream.Write(0u);                // type(id)
-            stream.WriteBc(0);               // ObjId
-            stream.WriteBc(0);               // ObjId
+            stream.WriteBc((uint)ObjId);     // ObjId
+            stream.WriteBc((uint)ObjId);     // ObjId
             stream.Write(LeftTime);
             stream.Write(0u);                      // type(id)
             stream.Write(DoodadId);                // doodadId
