@@ -64,7 +64,8 @@ namespace AAEmu.Game.Models.Game.Quests
         public uint Start()
         {
             var res = false;
-            //ComponentId = 0u;
+            ComponentId = 0u;
+            var compound = true;
 
             for (Step = QuestComponentKind.None; Step <= QuestComponentKind.Ready; Step++) // далее шага Ready = 6 не идем
             {
@@ -105,6 +106,13 @@ namespace AAEmu.Game.Models.Game.Quests
                                     _log.Warn("Quest - {0}: ComponentId {1}, Step {2}, Status {3}, res {4}, act.DetailType {5}", TemplateId, ComponentId, Step, Status, res, act.DetailType); //  for debuging
 
                                     res = act.Use(Owner, this, Objectives[componentIndex]);
+
+                                    if (components.Count > 1)
+                                    {
+                                        res = compound && res;
+                                        compound = res;
+                                    }
+
                                     break;
                                 }
                             case "QuestActObjItemGather" when Step == QuestComponentKind.Progress: // проверка на то, что в инвентаре уже есть нужный квестовый предмет
@@ -124,6 +132,13 @@ namespace AAEmu.Game.Models.Game.Quests
                                     _log.Warn("Quest - {0}: ComponentId {1}, Step {2}, Status {3}, res {4}, act.DetailType {5}", TemplateId, ComponentId, Step, Status, res, act.DetailType); //  for debuging
 
                                     res = act.Use(Owner, this, Objectives[componentIndex]);
+
+                                    if (components.Count > 1)
+                                    {
+                                        res = compound && res;
+                                        compound = res;
+                                    }
+
                                     break;
                                 }
                             case "QuestActObjInteraction":
@@ -144,7 +159,10 @@ namespace AAEmu.Game.Models.Game.Quests
                                 // case "QuestActConAcceptNpc" when Step == QuestComponentKind.Start:
                                 // res = true, если взаимодействуем с нужным Npc, иначе false и цикл прерывается
                                 res = act.Use(Owner, this, Objectives[componentIndex]); // заполним переменные QuestAcceptorType и AcceptorType
-                                ComponentId = components[componentIndex].Id; // сохраняем только старовый ComponentId!
+                                if (res)
+                                {
+                                    ComponentId = components[componentIndex].Id; // сохраняем только старовый ComponentId!
+                                }
                                 break;
                         }
 
@@ -284,7 +302,10 @@ namespace AAEmu.Game.Models.Game.Quests
                                 {
                                     selective++;
                                     if (selective == selected)
+                                    {
                                         res = act.Use(Owner, this, Objectives[componentIndex]);
+                                        ComponentId = components[componentIndex].Id;
+                                    }
 
                                     break;
                                 }
@@ -298,6 +319,7 @@ namespace AAEmu.Game.Models.Game.Quests
                                 break;
                             default:
                                 res = act.Use(Owner, this, Objectives[componentIndex]);
+                                ComponentId = components[componentIndex].Id;
                                 var cStep = Template.LetItDone;
                                 if (cStep && res == false)
                                 {

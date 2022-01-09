@@ -75,15 +75,22 @@ namespace AAEmu.Game.Utils
                         character.SendMessage("[Quest] Proper usage: /quest step <questId> <stepId>");
                     }
                     break;
-                case "prog":
+                case "update":
                     if (args.Length >= 2)
                     {
                         if (uint.TryParse(args[1], out questId))
                         {
                             if (character.Quests.HasQuest(questId))
                             {
+
                                 var quest = character.Quests.Quests[questId];
+                                if (quest.Step > QuestComponentKind.Reward)
+                                    quest.Step = QuestComponentKind.Start;
+
+                                character.SendMessage("[Quest] Perform step {1} for quest {0}", questId, quest.Step);
+                                quest.Status = QuestStatus.Progress;
                                 quest.Update();
+                                quest.Step++;
                             }
                             else
                             {
@@ -93,7 +100,7 @@ namespace AAEmu.Game.Utils
                     }
                     else
                     {
-                        character.SendMessage("[Quest] Proper usage: /quest prog <questId>");
+                        character.SendMessage("[Quest] Proper usage: /quest update <questId>");
                     }
                     break;
                 case "remove":
@@ -117,7 +124,7 @@ namespace AAEmu.Game.Utils
                     }
                     break;
                 default:
-                    character.SendMessage("[Quest] /quest <add/remove/list/prog/step/reward>");
+                    character.SendMessage("[Quest] /quest <add/remove/list/update/step/reward>");
                     break;
             }
         }

@@ -49,7 +49,10 @@ namespace AAEmu.Game.Models.Game.Char
             if (Quests.ContainsKey(questContextId))
             {
                 _log.Warn("Duplicate add quest {0}", questContextId);
-                return;
+                Drop(questContextId, true);
+                _log.Warn("Let's restore the work of the quest {0}", questContextId);
+
+                //return;
             }
 
             var template = QuestManager.Instance.GetTemplate(questContextId);
@@ -64,7 +67,10 @@ namespace AAEmu.Game.Models.Game.Char
 
             var res = quest.Start();
             if (res == 0)
+            {
                 Quests.Remove(quest.TemplateId); // удаляем квест, если было взаимодействие с не предназначенным для квеста Npc
+                _log.Warn("Npc is far away to start the quest {0}", questContextId);
+            }
             else
             {
                 Owner.SendPacket(new SCQuestContextStartedPacket(quest, res));

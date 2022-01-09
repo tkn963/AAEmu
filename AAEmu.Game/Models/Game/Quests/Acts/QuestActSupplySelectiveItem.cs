@@ -14,8 +14,7 @@ namespace AAEmu.Game.Models.Game.Quests.Acts
         {
             _log.Warn("QuestActSupplySelectiveItem");
 
-            if (objective == Id)
-                return character.Inventory.Bag.AcquireDefaultItem(ItemTaskType.QuestSupplyItems, ItemId, Count, GradeId, 0);
+            character.Inventory.Bag.AcquireDefaultItem(ItemTaskType.QuestSupplyItems, ItemId, Count, GradeId, 0);
 
             return objective >= Count;
         }
