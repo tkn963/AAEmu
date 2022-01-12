@@ -65,15 +65,16 @@ namespace AAEmu.Game.Models.Game.Char
             quest.Owner = Owner;
             Quests.Add(quest.TemplateId, quest);
 
-            var res = quest.Start();
-            if (res == 0)
+            var res = quest.ContextStarted();
+            if (!res)
             {
+                QuestIdManager.Instance.ReleaseId((uint)quest.Id); // освобождаем использованный ID
                 Quests.Remove(quest.TemplateId); // удаляем квест, если было взаимодействие с не предназначенным для квеста Npc
                 _log.Warn("Npc is far away to start the quest {0}", questContextId);
             }
             else
             {
-                Owner.SendPacket(new SCQuestContextStartedPacket(quest, res));
+                Owner.SendPacket(new SCQuestContextStartedPacket(quest, quest.ComponentId));
             }
         }
 

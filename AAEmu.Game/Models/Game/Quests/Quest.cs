@@ -33,7 +33,6 @@ namespace AAEmu.Game.Models.Game.Quests
         public int SupplyItem { get; set; }
         public bool EarlyCompletion { get; set; }
         public long DoodadId { get; set; }
-        public ulong ObjId { get; set; }
         public uint ComponentId { get; set; }
         public QuestAcceptorType QuestAcceptorType { get; set; }
         public uint AcceptorType { get; set; }
@@ -48,7 +47,7 @@ namespace AAEmu.Game.Models.Game.Quests
             Objectives = new int[ObjectiveCount];
             SupplyItem = 0;
             EarlyCompletion = false;
-            ObjId = 0;
+            DoodadId = 0;
         }
 
         public Quest(QuestTemplate template)
@@ -58,7 +57,7 @@ namespace AAEmu.Game.Models.Game.Quests
             Objectives = new int[ObjectiveCount];
             SupplyItem = 0;
             EarlyCompletion = false;
-            ObjId = 0;
+            DoodadId = 0;
         }
 
         public uint Start()
@@ -173,6 +172,131 @@ namespace AAEmu.Game.Models.Game.Quests
                     return ComponentId;
             }
             return res ? ComponentId : 0;
+        }
+
+        /*
+        * Посылка пакета SCQuestContextStartedPacket
+        * Если objectives выполнено, то Status = Ready, иначе Progress
+        */
+        public bool ContextStarted()
+        {
+            var res = false;
+            ComponentId = 0;
+
+            for (Step = QuestComponentKind.None; Step <= QuestComponentKind.Reward; Step++)
+            {
+                var components = Template.GetComponents(Step);
+                if (components.Count == 0) { continue; } // пропускаем пустые компоненты
+                for (var componentIndex = 0; componentIndex < components.Count; componentIndex++)
+                {
+                    switch (Step)
+                    {
+                        case QuestComponentKind.None:
+                        case QuestComponentKind.Start:
+                            {
+                                ComponentId = components[componentIndex].Id;
+                                var acts = QuestManager.Instance.GetActs(components[componentIndex].Id); // взять акт для анализа, может быть более одного
+                                foreach (var act in acts)
+                                {
+                                    switch (act.DetailType)
+                                    {
+                                        case "QuestActConAcceptNpc":
+                                            Status = QuestStatus.Progress;
+                                            res = act.Use(Owner, this, 0);  // получим квестовый предмет без взаимодействия с кем либо, если objective = 0, то добавим в инвентарь предмет или багаж
+                                            _log.Warn("QuestContextStarted - {0}: ComponentId {1}, Step {2}, Status {3}, res {4}, act.DetailType {5}", TemplateId, ComponentId, Step, Status, res, act.DetailType); //  for debuging
+                                            break;
+                                        default:
+                                            _log.Warn("QuestContextStarted wants to do it - {0}: ComponentId {1}, Step {2}, Status {3}, res {4}, act.DetailType {5}", TemplateId, ComponentId, Step, Status, res, act.DetailType); //  for debuging
+                                            break;
+                                    }
+                                }
+                                break;
+                            }
+                        case QuestComponentKind.Supply:
+                            {
+                                var acts = QuestManager.Instance.GetActs(components[componentIndex].Id); // взять акт для анализа, может быть более одного
+                                foreach (var act in acts)
+                                {
+                                    switch (act.DetailType)
+                                    {
+                                        case "QuestActSupplyItem":
+                                            Status = QuestStatus.Progress;
+                                            //res = act.Use(Owner, this, SupplyItem);
+                                            res = act.Use(Owner, this, 0);  // получим квестовый предмет без взаимодействия с кем либо, если objective = 0, то добавим в инвентарь предмет или багаж
+                                            _log.Warn("QuestContextStarted - {0}: ComponentId {1}, Step {2}, Status {3}, res {4}, act.DetailType {5}", TemplateId, ComponentId, Step, Status, res, act.DetailType); //  for debuging
+                                            break;
+                                        default:
+                                            _log.Warn("QuestContextStarted wants to do it - {0}: ComponentId {1}, Step {2}, Status {3}, res {4}, act.DetailType {5}", TemplateId, ComponentId, Step, Status, res, act.DetailType); //  for debuging
+                                            break;
+                                    }
+                                }
+                                break;
+                            }
+                        case QuestComponentKind.Progress:
+                            {
+                                Status = QuestStatus.Progress;
+                                //var acts = QuestManager.Instance.GetActs(components[componentIndex].Id); // взять акт для анализа, может быть более одного
+                                //foreach (var act in acts)
+                                //{
+                                //    switch (act.DetailType)
+                                //    {
+                                //        //case "QuestActObjItemGather":
+                                //        //    var template = act.GetTemplate<QuestActObjItemGather>();
+                                //        //    Status = QuestStatus.Progress;
+                                //        //    Owner.Inventory.Bag.GetAllItemsByTemplate(template.ItemId, -1, out _, out Objectives[componentIndex]);
+                                //        //    if (Objectives[componentIndex] >= template.Count) // TODO check to overtime
+                                //        //    {
+                                //        //        Objectives[componentIndex] = template.Count;
+                                //        //        Status = QuestStatus.Ready;
+                                //        //    }
+                                //        //    else
+                                //        //        Status = QuestStatus.Progress;
+
+                                //        //    res = act.Use(Owner, this, Objectives[componentIndex]); // проверка на то, что в инвентаре уже есть нужный квестовый предмет
+                                //        //    _log.Warn("QuestContextStarted - {0}: ComponentId {1}, Step {2}, Status {3}, res {4}, act.DetailType {5}", TemplateId, ComponentId, Step, Status, res, act.DetailType); //  for debuging
+                                //        //    break;
+                                //        default:
+                                //            Status = QuestStatus.Progress;
+                                //            _log.Warn("QuestContextStarted - {0}: ComponentId {1}, Step {2}, Status {3}, res {4}, act.DetailType {5}", TemplateId, ComponentId, Step, Status, res, act.DetailType); //  for debuging
+                                //            break;
+                                //    }
+                                //}
+                                var acts = QuestManager.Instance.GetActs(components[componentIndex].Id); // взять акт для анализа, может быть более одного
+                                foreach (var act in acts)
+                                {
+                                    switch (act.DetailType)
+                                    {
+                                        default:
+                                            _log.Warn("QuestContextStarted wants to do it - {0}: ComponentId {1}, Step {2}, Status {3}, res {4}, act.DetailType {5}", TemplateId, ComponentId, Step, Status, res, act.DetailType); //  for debuging
+                                            break;
+                                    }
+                                }
+                                //_log.Warn("QuestContextStarted - {0}: ComponentId {1}, Step {2}, Status {3}, res {4}", TemplateId, ComponentId, Step, Status, res);
+                                return true;
+                            }
+                        case QuestComponentKind.Ready:
+                        case QuestComponentKind.Reward:
+                            {
+                                Status = QuestStatus.Ready;
+                                var acts = QuestManager.Instance.GetActs(components[componentIndex].Id); // взять акт для анализа, может быть более одного
+                                foreach (var act in acts)
+                                {
+                                    switch (act.DetailType)
+                                    {
+                                        default:
+                                            _log.Warn("QuestContextStarted wants to do it - {0}: ComponentId {1}, Step {2}, Status {3}, res {4}, act.DetailType {5}", TemplateId, ComponentId, Step, Status, res, act.DetailType); //  for debuging
+                                            break;
+                                    }
+                                }
+                                //_log.Warn("QuestContextStarted - {0}: ComponentId {1}, Step {2}, Status {3}, res {4}", TemplateId, ComponentId, Step, Status, res);
+                                return true;
+                            }
+                        default:
+                            break;
+                    }
+                }
+            }
+            return res;
         }
 
         public void Update(bool send = true)
@@ -720,7 +844,7 @@ namespace AAEmu.Game.Models.Game.Quests
                                     var interactionTarget = (Doodad)target;
                                     if (template.DoodadId == interactionTarget.TemplateId)
                                     {
-                                        ObjId = interactionTarget.ObjId;
+                                        DoodadId = interactionTarget.ObjId;
                                         res = true;
                                         Objectives[componentIndex]++;
                                         if (Objectives[componentIndex] >= template.Count) // TODO check to overtime
@@ -741,7 +865,7 @@ namespace AAEmu.Game.Models.Game.Quests
                                 if (target != null)
                                 {
                                     var interactionTarget = (Doodad)target;
-                                    ObjId = interactionTarget.ObjId;
+                                    DoodadId = interactionTarget.ObjId;
                                 }
                                 if (Template.Score > 0)
                                 {
@@ -770,7 +894,7 @@ namespace AAEmu.Game.Models.Game.Quests
                                 if (target != null)
                                 {
                                     var interactionTarget = (Doodad)target;
-                                    ObjId = interactionTarget.ObjId;
+                                    DoodadId = interactionTarget.ObjId;
                                 }
                                 if (Template.Score > 0)
                                 {
@@ -954,10 +1078,10 @@ namespace AAEmu.Game.Models.Game.Quests
             }
 
             stream.Write(false);             // isCheckSet
-            stream.WriteBc((uint)ObjId);     // ObjId
+            stream.WriteBc((uint)DoodadId);  // ObjId
             stream.Write(0u);                // type(id)
-            stream.WriteBc((uint)ObjId);     // ObjId
-            stream.WriteBc((uint)ObjId);     // ObjId
+            stream.WriteBc((uint)DoodadId);  // ObjId
+            stream.WriteBc((uint)DoodadId);  // ObjId
             stream.Write(LeftTime);
             stream.Write(0u);                      // type(id)
             stream.Write(DoodadId);                // doodadId
