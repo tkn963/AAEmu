@@ -429,7 +429,8 @@ namespace AAEmu.Game.Core.Managers.UnitManagers
                 {
                     var point = charTemplate.Pos.Clone();
                     // Recalculate ZoneId as this isn't included in the config
-                    point.ZoneId = WorldManager.Instance.GetZoneId(charTemplate.Pos.WorldId, charTemplate.Pos.X, charTemplate.Pos.Y);
+                    // Always use main_world Id for this
+                    point.ZoneId = WorldManager.Instance.GetZoneId(WorldManager.DefaultWorldId, charTemplate.Pos.X, charTemplate.Pos.Y);
                     // Convert the json's degrees to rads
                     point.Roll = point.Roll.DegToRad();
                     point.Pitch = point.Pitch.DegToRad();
@@ -438,12 +439,14 @@ namespace AAEmu.Game.Core.Managers.UnitManagers
                     // Males
                     var template = _templates[(byte)(16 + charTemplate.Id)];
                     template.SpawnPosition = point;
+                    template.SpawnPosition.WorldId = WorldManager.DefaultWorldId;
                     template.NumInventorySlot = charTemplate.NumInventorySlot;
                     template.NumBankSlot = charTemplate.NumBankSlot;
 
                     // Females
                     template = _templates[(byte)(32 + charTemplate.Id)];
                     template.SpawnPosition = point;
+                    template.SpawnPosition.WorldId = WorldManager.DefaultWorldId;
                     template.NumInventorySlot = charTemplate.NumInventorySlot;
                     template.NumBankSlot = charTemplate.NumBankSlot;
                 }
@@ -895,6 +898,43 @@ namespace AAEmu.Game.Core.Managers.UnitManagers
 
             inventory.Equipment.AddOrMoveExistingItem(0, item, (int)slot);
             //inventory.Equip[(int) slot] = item;
+        }
+
+        public void ApplyBeautySalon(Character character, uint hairModel, UnitCustomModelParams modelParams)
+        {
+            // TODO: Add support for future X-day Salon Certificate items
+            
+            if (character.Inventory.GetItemsCount(SlotType.Inventory, Item.SalonCertificate) <= 0)
+                return;
+            
+            var oldHair = character.Equipment.GetItemBySlot((byte)EquipmentItemSlot.Hair);
+
+            // Check if hair changed
+            if ((oldHair != null) && (oldHair.TemplateId != hairModel))
+            {
+                // Remove old hair item
+                oldHair._holdingContainer.RemoveItem(ItemTaskType.Invalid, oldHair, true);
+                // Create new hair item
+                if (!character.Equipment.AcquireDefaultItemEx(ItemTaskType.Invalid, hairModel, 1, -1, 
+                        out var newItemsList, out var _, character.Id, (int)EquipmentItemSlot.Hair))
+                {
+                    Log.Error($"Failed to add new hairstyle for player {character.Name} ({character.Id})!");
+                }
+
+                if (newItemsList.Count != 1)
+                {
+                    Log.Error($"Something failed during hairstyle creation for player {character.Name} ({character.Id})!");
+                }
+                
+            }
+            character.ModelParams = modelParams;
+            
+            character.BroadcastPacket(new SCCharacterGenderAndModelModifiedPacket(character), true);
+            
+            if (character.Inventory.Bag.ConsumeItem(ItemTaskType.EditCosmetic, Item.SalonCertificate,1, null) <= 0)
+                Log.Error($"Could not consume salon certificate for player {character.Name} ({character.Id})!");
+            
+            // The client will do a salon leave request after it gets the SCCharacterGenderAndModelModifiedPacket
         }
     }
 }
