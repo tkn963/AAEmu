@@ -17,7 +17,7 @@ namespace AAEmu.Game.Models.Tasks.Characters
                 {
                     CharacterManager.Instance.CheckForDeletedCharacters();
                 }
-                catch
+                catch (Exception e)
                 {
                     // Do nothing
                 }

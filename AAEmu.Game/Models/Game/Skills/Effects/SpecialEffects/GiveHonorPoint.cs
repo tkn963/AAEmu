@@ -3,7 +3,6 @@ using AAEmu.Game.Core.Managers;
 using AAEmu.Game.Core.Packets.G2C;
 using AAEmu.Game.Models.Game.Char;
 using AAEmu.Game.Models.Game.Units;
-using AAEmu.Game.Models.StaticValues;
 
 namespace AAEmu.Game.Models.Game.Skills.Effects.SpecialEffects
 {
@@ -17,8 +16,8 @@ namespace AAEmu.Game.Models.Game.Skills.Effects.SpecialEffects
             if (!(caster is Character character))
                 return;
 
-            var points = (int)Math.Round(AppConfiguration.Instance.World.HonorRate * amount);
-            character.ChangeGamePoints(GamePointKind.Honor,points);
+            character.HonorPoint += (int)Math.Round(AppConfiguration.Instance.World.HonorRate * amount);
+            character.SendPacket(new SCGamePointChangedPacket(0, amount));
         }
     }
 }

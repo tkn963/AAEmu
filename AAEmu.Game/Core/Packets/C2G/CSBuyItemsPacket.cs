@@ -10,7 +10,6 @@ using AAEmu.Game.Models.Game;
 using AAEmu.Game.Models.Game.Items;
 using AAEmu.Game.Models.Game.Items.Actions;
 using AAEmu.Game.Models.Game.Merchant;
-using AAEmu.Game.Models.StaticValues;
 using AAEmu.Game.Utils;
 
 namespace AAEmu.Game.Core.Packets.C2G
@@ -158,12 +157,14 @@ namespace AAEmu.Game.Core.Packets.C2G
 
             if (honorPoints > 0)
             {
-                Connection.ActiveChar.ChangeGamePoints(GamePointKind.Honor,honorPoints);
+                Connection.ActiveChar.HonorPoint -= honorPoints;
+                Connection.SendPacket(new SCGamePointChangedPacket(0, -honorPoints));
             }
 
             if (vocationBadges > 0)
             {
-                Connection.ActiveChar.ChangeGamePoints(GamePointKind.Vocation,vocationBadges);
+                Connection.ActiveChar.VocationPoint -= vocationBadges;
+                Connection.SendPacket(new SCGamePointChangedPacket(1, -vocationBadges));
             }
 
             if (money > 0)

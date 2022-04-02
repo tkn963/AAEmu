@@ -3,7 +3,6 @@ using System.Linq;
 using AAEmu.Game.Core.Managers.UnitManagers;
 using AAEmu.Game.Core.Packets.G2C;
 using AAEmu.Game.Models.Game.Items.Actions;
-using AAEmu.Game.Models.StaticValues;
 using MySql.Data.MySqlClient;
 
 namespace AAEmu.Game.Models.Game.Char
@@ -83,7 +82,8 @@ namespace AAEmu.Game.Models.Game.Char
 
             if (expand.LifePoint > 0)
             {
-                Owner.ChangeGamePoints(GamePointKind.Vocation, expand.LifePoint);
+                Owner.VocationPoint -= expand.LifePoint;
+                Owner.SendPacket(new SCGamePointChangedPacket(1, -expand.LifePoint));
             }
 
             if (expand.ItemId != 0 && expand.ItemCount != 0)
